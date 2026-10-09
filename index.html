@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeRF vs 3D Gaussian Splatting — thesis companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;1,8..60,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <p class="kicker">Bachelor thesis companion · figure explainer</p>
+        <h1>NeRF vs 3D Gaussian Splatting</h1>
+        <p class="lede">
+          Same scene, two representations: a continuous radiance field queried along rays,
+          versus explicit anisotropic Gaussians drawn as splats.
+        </p>
+      </header>
+
+      <main class="layout">
+        <section class="panel copy" aria-labelledby="step-title">
+          <div class="step-meta">
+            <div class="step-meta-left">
+              <span id="mode-badge" class="mode-badge">Guided</span>
+              <span id="step-index">Step 1 of 5</span>
+            </div>
+            <div class="dots" role="tablist" aria-label="Guided steps">
+              <button class="dot is-active" data-step="0" type="button" aria-label="Step 1" aria-current="true"></button>
+              <button class="dot" data-step="1" type="button" aria-label="Step 2"></button>
+              <button class="dot" data-step="2" type="button" aria-label="Step 3"></button>
+              <button class="dot" data-step="3" type="button" aria-label="Step 4"></button>
+              <button class="dot" data-step="4" type="button" aria-label="Step 5"></button>
+            </div>
+          </div>
+
+          <h2 id="step-title">Representation</h2>
+          <div id="step-body" class="step-body">
+            <p>
+              A NeRF stores the scene as a continuous neural field. Ask “what is at
+              <em>(x, y, z)</em>?” and the network returns density and colour.
+            </p>
+            <p>
+              3D Gaussian Splatting stores the scene as a list of anisotropic ellipsoids —
+              explicit primitives you can draw directly.
+            </p>
+          </div>
+
+          <nav class="step-nav" aria-label="Step navigation">
+            <button id="btn-back" type="button" disabled>Back</button>
+            <button id="btn-next" type="button">Next</button>
+          </nav>
+          <p class="hint">Keyboard: ← → to change steps. Drag either panel to orbit both.</p>
+
+          <div id="controls" class="controls is-hidden">
+            <h3>Viewing direction</h3>
+            <label class="slider">
+              <span>θ <small>polar</small></span>
+              <input id="theta" type="range" min="0" max="180" value="70" step="1" />
+              <output id="theta-out" for="theta">70°</output>
+            </label>
+            <label class="slider">
+              <span>φ <small>azimuth</small></span>
+              <input id="phi" type="range" min="0" max="360" value="40" step="1" />
+              <output id="phi-out" for="phi">40°</output>
+            </label>
+          </div>
+
+          <div id="train-panel" class="train-panel is-hidden" aria-live="polite">
+            <h3>Didactic “training”</h3>
+            <div class="train-row">
+              <span class="out-label">NeRF</span>
+              <div class="bar" title="Optimization progress">
+                <div id="train-fill"></div>
+              </div>
+              <span id="train-label" class="mono">0%</span>
+            </div>
+            <p class="train-note">
+              Classical NeRF optimises a network (slow). 3DGS fits Gaussians and can
+              render novel views in real time once ready.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel figure" aria-label="Split comparison figure">
+          <div class="split">
+            <div class="viewport-wrap">
+              <span class="panel-tag">NeRF</span>
+              <canvas id="viewport-nerf"></canvas>
+            </div>
+            <div class="viewport-wrap">
+              <span class="panel-tag">3DGS</span>
+              <canvas id="viewport-gs"></canvas>
+            </div>
+          </div>
+          <p id="fig-caption" class="fig-caption">
+            Fig. 1. Continuous density field (left) versus explicit anisotropic Gaussians
+            (right). Didactic fake — not a trained model.
+          </p>
+
+          <aside class="hud" aria-live="polite">
+            <div class="hud-block">
+              <h3>NeRF · this ray</h3>
+              <div class="sigma-row">
+                <span class="out-label">α</span>
+                <div class="bar" title="Accumulated opacity along the ray">
+                  <div id="alpha-fill"></div>
+                </div>
+                <span id="hud-alpha" class="mono">—</span>
+              </div>
+              <div class="swatch-row">
+                <span class="out-label">c</span>
+                <span id="swatch-nerf" class="swatch" title="Integrated colour"></span>
+                <span id="hud-nerf-rgb" class="mono">rgb —</span>
+              </div>
+            </div>
+            <div class="hud-arrow" aria-hidden="true">↔</div>
+            <div class="hud-block">
+              <h3>3DGS · appearance</h3>
+              <div class="swatch-row">
+                <span class="out-label">c</span>
+                <span id="swatch-gs" class="swatch" title="View-dependent colour"></span>
+                <span id="hud-gs-rgb" class="mono">rgb —</span>
+              </div>
+              <p class="hud-note" id="hud-note">
+                Shared camera — orbit either side.
+              </p>
+            </div>
+          </aside>
+        </section>
+      </main>
+
+      <footer class="colophon">
+        Companion to Mildenhall et al. (NeRF) and Kerbl et al. (3D Gaussian Splatting).
+        Didactic visuals only — not trained radiance fields or real splat optimisers.
+      </footer>
+    </div>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
